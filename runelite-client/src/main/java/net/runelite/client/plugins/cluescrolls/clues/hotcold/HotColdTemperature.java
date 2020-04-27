@@ -111,4 +111,22 @@ public enum HotColdTemperature
 			.max(Comparator.comparingInt(x -> (x.getText()).length()))
 			.orElse(null);
 	}
+
+	/**
+	 * This is only used for dev mode through the ::hotcold command.
+	 * Builds the message we would get if we were a given distance from our target location
+	 */
+	public static String getMessageFromDistance(int distance, Set<HotColdTemperature> temps)
+	{
+		String message = DEVICE_USED_START_TEXT;
+		for (HotColdTemperature temp : temps)
+		{
+			if (distance >= temp.minDistance && distance <= temp.maxDistance)
+			{
+				message = message + temp.text;
+				break;
+			}
+		}
+		return message;
+	}
 }

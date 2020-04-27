@@ -596,7 +596,11 @@ public class ClueScrollPlugin extends Plugin
 	@Subscribe
 	public void onCommandExecuted(CommandExecuted commandExecuted)
 	{
-		if (developerMode && commandExecuted.getCommand().equals("clue"))
+		if (!developerMode)
+		{
+			return;
+		}
+		if (commandExecuted.getCommand().equals("clue"))
 		{
 			String text = Strings.join(commandExecuted.getArguments(), " ");
 
@@ -607,6 +611,35 @@ public class ClueScrollPlugin extends Plugin
 			else
 			{
 				ClueScroll clueScroll = findClueScroll(text);
+				log.debug("Found clue scroll for '{}': {}", text, clueScroll);
+				updateClue(clueScroll);
+			}
+		}
+		else if (commandExecuted.getCommand().equals("hotcold"))
+		{
+			String text = Strings.join(commandExecuted.getArguments(), " ");
+
+			if ("scan".equals(text))
+			{
+				log.debug("Triggering debug step for hot cold clue");
+				if (HotColdClue.devModeScan((HotColdClue) clue, this))
+				{
+					worldMapPointsSet = false;
+				}
+
+			}
+			else if ("set".equals(commandExecuted.getArguments()[0]))
+			{
+				int x = Integer.parseInt(commandExecuted.getArguments()[1]);
+				int y = Integer.parseInt(commandExecuted.getArguments()[2]);
+				if (HotColdClue.devModeSetHotColdLocation((HotColdClue) clue, x, y))
+				{
+					resetClue(true);
+				}
+			}
+			else
+			{
+				ClueScroll clueScroll = HotColdClue.devForText(text);
 				log.debug("Found clue scroll for '{}': {}", text, clueScroll);
 				updateClue(clueScroll);
 			}

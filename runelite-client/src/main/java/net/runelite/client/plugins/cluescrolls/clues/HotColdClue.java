@@ -30,6 +30,7 @@ import java.awt.Graphics2D;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -78,6 +79,12 @@ public class HotColdClue extends ClueScroll implements LocationClueScroll, Locat
 	@Nullable
 	private HotColdSolver hotColdSolver;
 	private WorldPoint location;
+	/**
+	 * This is only used for dev mode through the ::hotcold command.
+	 * This is the location that we are looking for.
+	 * Default is by the Baxtorian Falls so we can load the interface without having to set the location on load.
+	 */
+	private HotColdLocation devModeLocation = HotColdLocation.KANDARIN_BAXTORIAN_FALLS;
 
 	public static HotColdClue forText(String text)
 	{
@@ -372,5 +379,77 @@ public class HotColdClue extends ClueScroll implements LocationClueScroll, Locat
 	public String[] getNpcs()
 	{
 		return new String[] {npc};
+	}
+
+
+	/**
+	 * This is only used for dev mode through the ::hotcold command. The regular text is too long for in game chat so these keys can be used instead.
+	 */
+	public static HotColdClue devForText(String text)
+	{
+		if ("beginner".equalsIgnoreCase(text))
+		{
+			BEGINNER_CLUE.reset();
+			return BEGINNER_CLUE;
+		}
+		else if ("master".equalsIgnoreCase(text))
+		{
+			MASTER_CLUE.reset();
+			return MASTER_CLUE;
+		}
+		else if ("master-league".equalsIgnoreCase(text))
+		{
+			MASTER_CLUE_LEAGUE.reset();
+			return MASTER_CLUE_LEAGUE;
+		}
+
+		return null;
+	}
+
+	/**
+	 * This is only used for dev mode through the ::hotcold command.
+	 * Finds a hot cold location by world point x and y and sets that the current location to scan for,
+	 */
+	public static boolean devModeSetHotColdLocation(HotColdClue clue, int x, int y)
+	{
+		final List<HotColdLocation> locations = Arrays.stream(HotColdLocation.values())
+			.filter(l -> l.getWorldPoint().getX() == x && l.getWorldPoint().getY() == y)
+			.collect(Collectors.toList());
+
+		if (!locations.isEmpty())
+		{
+			clue.devModeLocation = locations.get(0);
+			log.debug("Hot cold dev mode found location {}", clue.devModeLocation.getArea());
+			return true;
+		}
+		else
+		{
+			log.debug("Hot cold dev mode did not find location for coords {} {}", x, y);
+			return false;
+		}
+	}
+
+	/**
+	 * This is only used for dev mode through the ::hotcold command.
+	 * Pretends to be the in game scan orb, sending update messages to the hot cold clue solver.
+	 */
+	public static Boolean devModeScan(HotColdClue clue, final ClueScrollPlugin plugin)
+	{
+		WorldPoint playerLocation = plugin.getClient().getLocalPlayer().getWorldLocation();
+		WorldPoint stepToFind = clue.devModeLocation.getWorldPoint();
+		int distance = playerLocation.distanceTo(stepToFind);
+		log.debug("Hot cold dev mode distance to step {}", distance);
+
+		Set<HotColdTemperature> temps = HotColdTemperature.MASTER_HOT_COLD_TEMPERATURES;
+
+		if (clue == BEGINNER_CLUE)
+		{
+			temps = HotColdTemperature.BEGINNER_HOT_COLD_TEMPERATURES;
+		}
+
+		String message = HotColdTemperature.getMessageFromDistance(distance, temps);
+		log.debug("Hot cold dev mode message to send {}", message);
+
+		return clue.update(message, plugin);
 	}
 }
